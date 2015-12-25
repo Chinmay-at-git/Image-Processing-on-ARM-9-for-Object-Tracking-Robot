@@ -44,34 +44,36 @@ Functions to be used for I/O
 */
 
 
-unsigned char * rgb2gray(const char *filename)
+unsigned char *rgb2gray(const char *filename)
 {
 	// Checked at 05/08/13 22:48, Function working properly.
 	// Inputs RIF File, outputs gray data;
         // EDIT: Optimaztion , Changing Variables, Loops...
 	FILE *fid;
 	unsigned char *data,*temp,*block,*tempblock;
-	unsigned int starter[3],imsize,blocksize,n,x;
+	unsigned int count,starter[3],imsize,blocksize,n,x;
 	float rpar=0.18,gpar=0.71,bpar=0.1;
 	fid=fopen(filename,"rb");
 		if(fid==NULL)
-	printf("\nERROR in rif2gray :File %s cannot open\n",filename);
+	//printf("\nERROR in rif2gray :File %s cannot open\n",filename);
 	fread(starter,4,3,fid);
 	
 	imsize=starter[0]*starter[1];
 	if(starter[2]!=3)
 	{
-		printf("\n Error in rgb2gray() The image provided is not RGB. \n ABORT and Return");
+		//printf("\n Error in rgb2gray() The image provided is not RGB. \n ABORT and Return");
 		return(NULL);
 	}
 	data=(unsigned char *)malloc(imsize+12);  // + 12 for EOF sequence and safeguarding
-	if(data==NULL)
+	
+if(data==NULL)
 	{
 	
-	printf("ERROR in rgb2gray() : malloc returned NULL \n Abort and return");
+	//printf("ERROR in rgb2gray() : malloc returned NULL \n Abort and return");
 	return(NULL);
     
     }
+else //printf("\nMalloc for Data Success");
 	temp=data;
 	fseek(fid,8l,SEEK_CUR); // 8 Byte unused space
       
@@ -87,13 +89,19 @@ unsigned char * rgb2gray(const char *filename)
 blocksize=imsize/16;
 
 block=(unsigned char *)malloc(blocksize);
-if(!block) printf("\nError in rgb2gray ::malloc for block failed\n");
+
+if(!block) //printf("\nError in rgb2gray ::malloc for block failed\n");
+//else //printf("\nMalloc for Block Success");
 tempblock=block;
 for(n=48;n!=0;n--)
 {
+                
 		block=tempblock;				
-		fread(block,1,blocksize,fid);
-		for(x=blocksize/24;x!=0;x--)
+		count=fread(block,1,blocksize,fid);
+		if(count!=blocksize)
+		//printf("\nERROR in BLOCK FILE reading!!! Expect Seg.Fault");
+//else //printf("\nSuccess in %d th file read",n)	;	
+for(x=blocksize/24;x!=0;x--)
 		{
 			*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
 			block+=3;
@@ -133,12 +141,71 @@ for(n=48;n!=0;n--)
     *data++=255;
     *data=255;
     // End of EOF Sequence 
-    
+  free(tempblock);// Free the imsize/16 block    
     
 	fclose(fid);
     return(temp);
 	
 }
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// EDIT : ADD ANOTHER FUNCTION rgb2gray_1()
+unsigned char * rgb2gray_1(unsigned char *indata,int w,int h)
+{
+	unsigned char *data,*temp,*block,*tempblock;
+	unsigned int count,imsize,blocksize,n,x;
+	float rpar=0.18,gpar=0.71,bpar=0.1;
+	
+	imsize=w*h;
+	data=(unsigned char *)malloc(imsize+10);
+block=indata;
+temp=data;	
+////////////////////////////////////////////////
+blocksize=imsize/16;
+
+
+if(!block) printf("\nError in rgb2gray ::malloc for block failed\n");
+//else //printf("\nMalloc for Block Success");
+
+for(n=48;n!=0;n--)
+{
+                
+		
+		
+//else //printf("\nSuccess in %d th file read",n)	;	
+for(x=blocksize/24;x!=0;x--)
+		{
+			*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		*data++ =(rpar*(*block) +gpar*(*(block+1)) )+bpar*(*(block+2));
+			block+=3;
+        		
+		}	
+// This is Loop unwrapping for saving loop overheads.
+// Calc: imsize= rgbsize/3. blocksize=imsize/16 i.e. rgbsize/48 ; 
+// Unwrapping:: x= rgbsize/(48*24)=rgbsize/1152 .
+// So data will be written for: 8*(rgbsize/1152)*48= imsize times.
+// Result? : fread was working for every three bytes. It will now work for 48 times in total only. 
+// Not big memory constrain: filesize/48. Still thats around 20kb for 320X240  
+    			           
+}
+	
+    return(temp);
+	
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char * maskit(unsigned char *indata,double *mask,unsigned int row,unsigned int column)
 {
 	// checked at 05/08/13 23:26
@@ -156,7 +223,7 @@ unsigned char * maskit(unsigned char *indata,double *mask,unsigned int row,unsig
 	unsigned char *temp,*out;
 	out=(unsigned char *)malloc(row*column+12); // 10 for safeguarding
      if(out!=NULL)
-	printf("\n IN maskit function, malloc worked well");
+	//printf("\n IN maskit function, malloc worked well");
 	temp=out;						
 	for(i=1;i<row-1;i++)
 	{
@@ -168,7 +235,7 @@ unsigned char * maskit(unsigned char *indata,double *mask,unsigned int row,unsig
 				rvar=i+rowmove[k];
 				cvar=j+colmove[k];
 				hold=hold + (int)(*(indata+(rvar*column+cvar)))*mask[k];
-				// debug printf("  hold=%d  ",hold);
+				// debug //printf("  hold=%d  ",hold);
 			}
 			if(hold<0)
 			hold=0;
@@ -177,7 +244,7 @@ unsigned char * maskit(unsigned char *indata,double *mask,unsigned int row,unsig
 			out=temp+(i*column+j);
 			*out=(unsigned char)hold;
 			
-			// debug printf("\t %d",i*column+j);
+			// debug //printf("\t %d",i*column+j);
 		}
 	}
 	return(temp);
@@ -225,7 +292,7 @@ unsigned char *subthre(unsigned char *indata,int row,int col)
 			continue;
 			if((i+1)*col+j>=row*col)
 			continue;
-		//	printf("\nI have entered in second for at %d",i*col+j);
+		//	//printf("\nI have entered in second for at %d",i*col+j);
 			ori=*(indata+(i*col+j));
 			nxti=*(indata+((i+1)*col+j));
 			nxtj=*(indata+(i*col+j+1));
@@ -418,7 +485,7 @@ double measure_object(unsigned char *indata,int row,int col)
 		    }
 		    if((flg%2)!=0)
 		    {
-		    	//printf("\n Is I am here !%d %d",i,j);
+		    	////printf("\n Is I am here !%d %d",i,j);
 		    	colcnt++;
 		    }
 		}

@@ -1,0 +1,6 @@
+config PACKAGE_spc_test4
+    depends SPJ_DUMMY
+	bool "New application spc_test4"
+	default y
+	help
+		New application spc_test4 created by New Application Wizard
